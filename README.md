@@ -1,5 +1,7 @@
 # coex
 
+AI chat with a modern interface and Python PDF/image utilities. See [feature status and setup](PUBLIC_RELEASE.md) for supported features, current limitations and deployment requirements.
+
 This is an [eve](https://eve.dev) agent bootstrapped with [`eve init`](https://eve.dev/docs/reference/cli#eve-init).
 
 ## Getting started

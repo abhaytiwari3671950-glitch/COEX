@@ -4,33 +4,10 @@ import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import "./globals.css";
-
-const sans = Geist({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: "variable",
-  display: "swap",
-});
-
-const mono = Geist_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: "variable",
-  display: "swap",
-});
-
-export const metadata: Metadata = {
-  title: "coex",
-  description: "A Next.js starter for eve agents with AI Elements.",
-};
-
-// The page and Eve routes validate the generated app's Better Auth session.
+import "./modern.css";
+const sans = Geist({ variable: "--font-sans", subsets: ["latin"], weight: "variable", display: "swap" });
+const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"], weight: "variable", display: "swap" });
+export const metadata: Metadata = { title: "coex — Your space to think", description: "Think, write, code, and explore ideas with coex." };
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
-  return (
-    <html className={cn(sans.variable, mono.variable)} lang="en">
-      <body>
-        <TooltipProvider>{children}</TooltipProvider>
-      </body>
-    </html>
-  );
+  return <html className={cn("dark", sans.variable, mono.variable)} lang="en"><body><TooltipProvider>{children}</TooltipProvider></body></html>;
 }

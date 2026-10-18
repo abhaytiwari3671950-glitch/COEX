@@ -8,3 +8,4 @@ export default async function SessionPage({
   const { sessionId } = await params;
   return <AuthenticatedAgentChat sessionId={sessionId} />;
 }
+

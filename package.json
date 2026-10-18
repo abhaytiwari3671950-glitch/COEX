@@ -46,7 +46,8 @@
     "tailwind-merge": "3.6.0",
     "tailwindcss": "4.3.0",
     "use-stick-to-bottom": "1.1.4",
-    "better-auth": "1.6.26"
+    "better-auth": "1.6.26",
+    "@ai-sdk/google": "4.0.97"
   },
   "devDependencies": {
     "@types/node": "24.13.2",
