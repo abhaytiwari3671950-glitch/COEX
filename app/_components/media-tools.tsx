@@ -2,16 +2,8 @@
 import { useRef, useState } from "react";
 import type { UserContent } from "ai";
 import "../media.css";
+import { mediaRequest } from "@/lib/media-request";
 
-async function mediaRequest(body: Record<string, unknown>) {
-  const authorization = await fetch("/api/media-token", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({action: body.action})});
-  const credentials = await authorization.json();
-  if (!authorization.ok) throw new Error(credentials.error || "Please sign in again.");
-  const response = await fetch("/api/media", {method: "POST", headers: {"Content-Type": "application/json", Authorization: `Bearer ${credentials.token}`}, body: JSON.stringify(body)});
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Unable to process this file.");
-  return result;
-}
 function downloadPDF(data: string) {
   const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
   const url = URL.createObjectURL(new Blob([bytes], {type: "application/pdf"}));
@@ -23,7 +15,11 @@ export function ExportPDF({text}: {text: string}) {
   const [error, setError] = useState("");
   return <span className="coex-export"><button type="button" disabled={busy || !text.trim()} onClick={async () => {
     setBusy(true); setError("");
-    try { downloadPDF((await mediaRequest({action: "create_pdf", title: "coex response", text})).data); }
+    try {
+      const result = await mediaRequest({action: "create_pdf", title: "coex response", text});
+      if (typeof result.data !== "string" || result.mediaType !== "application/pdf") throw new Error("PDF export returned an invalid file. Please try again.");
+      downloadPDF(result.data);
+    }
     catch (error) { setError(error instanceof Error ? error.message : "PDF export failed."); }
     finally { setBusy(false); }
   }}>{busy ? "Creating PDF…" : "Download PDF"}</button>{error && <span role="alert">{error}</span>}</span>;
@@ -43,11 +39,13 @@ export function MediaTools({disabled, onSend}: {disabled: boolean; onSend: (part
       <input ref={input} aria-label="Upload PDF or image" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" disabled={busy || disabled} onChange={async event => {
         const selected = event.target.files?.[0]; if (!selected) return;
         setError(""); setFile(null);
+        if (!selected.size) { setError("Choose a nonempty file."); event.target.value = ""; return; }
         if (selected.size > 2 * 1024 * 1024) { setError("Choose a file smaller than 2 MB."); event.target.value = ""; return; }
         setBusy(true);
         try {
           const url = await new Promise<string>((resolve, reject) => {const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error("Unable to read the file.")); reader.readAsDataURL(selected);});
           const result = await mediaRequest({action: "inspect", mediaType: selected.type || (selected.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : ""), data: url.split(",")[1]});
+          if (typeof result.mediaType !== "string" || !["application/pdf", "image/png", "image/jpeg", "image/webp"].includes(result.mediaType)) throw new Error("File tools returned an unsupported file type.");
           const detail = result.pages !== undefined ? `${result.pages} pages · ${result.scanned ? "Scanned PDF: AI will read the page images" : "Text read successfully"}` : `${result.width} × ${result.height} image`;
           setFile({name: selected.name, url: `data:${result.mediaType};base64,${url.split(",")[1]}`, mediaType: result.mediaType, detail});
         } catch (error) { setError(error instanceof Error ? error.message : "Upload failed."); }
