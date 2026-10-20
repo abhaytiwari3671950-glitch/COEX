@@ -54,3 +54,13 @@ Run `COEX_ENV=development python manage.py test`. Model calls in the tests are m
 ## Verification for this migration
 
 13 Django integration tests passed using an isolated test database and mocked model output. `manage.py check`, static asset collection and JavaScript syntax validation passed. Real provider streaming, PostgreSQL deployment concurrency and the browser UI still need staging verification before production cutover.
+
+## Vercel migration configuration
+
+`vercel.json` selects Django on this branch even while the project dashboard still defaults to Next.js for `main`. It clears inherited install/output overrides. `pyproject.toml` points to `coex.wsgi:application`, and Python is pinned to 3.12. Requirements resolve through the tested lock file.
+
+Before redeploying this branch, configure **Preview** variables `DJANGO_SECRET_KEY`, `DATABASE_URL`, and `GOOGLE_GENERATIVE_AI_API_KEY`. Vercel deployment/branch/production hostname variables are added as exact allowed hosts and trusted CSRF origins; custom domains need explicit entries. No wildcard host trust is enabled. Production still refuses to start with missing secrets or ephemeral SQLite storage.
+
+For the first preview release, use a separate PostgreSQL database and set `COEX_RUN_MIGRATIONS=1` to apply committed migrations during the build. Remove this flag after provisioning if migrations are run separately by your release pipeline. `build.py` runs deployment checks; Vercel runs static collection automatically.
+
+Historical failed deployments remain immutable records. The `NEXT_NO_VERSION` failure on the Python branch is corrected by the branch-specific Django framework selection; old lockfile errors were superseded by successful main deployments. A new deployment can only become usable after its database and secrets are provisioned.

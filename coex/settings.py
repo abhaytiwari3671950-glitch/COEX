@@ -10,8 +10,10 @@ if not SECRET_KEY:
     if not DEBUG:
         raise ImproperlyConfigured('Set DJANGO_SECRET_KEY before running production.')
     SECRET_KEY = 'development-only-not-for-hosted-deployments'
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-CSRF_TRUSTED_ORIGINS = [x for x in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if x]
+deployment_hosts = [os.environ.get(key, '') for key in ('VERCEL_URL', 'VERCEL_BRANCH_URL', 'VERCEL_PROJECT_PRODUCTION_URL')]
+configured_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1' if DEBUG else '').split(',')
+ALLOWED_HOSTS = list(dict.fromkeys(host.strip() for host in configured_hosts + deployment_hosts if host.strip()))
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([x.strip() for x in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if x.strip()] + ['https://' + host for host in deployment_hosts if host]))
 database_url = os.environ.get('DATABASE_URL', '')
 if not DEBUG and not database_url.startswith(('postgres://', 'postgresql://')):
     raise ImproperlyConfigured('Production requires persistent PostgreSQL DATABASE_URL.')
@@ -32,7 +34,7 @@ SECURE_SSL_REDIRECT = not DEBUG
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_CONTENT_TYPE_NOSNIFF = True
 # Enable only behind a proxy that strips and sets this header.
-if os.environ.get('TRUST_PROXY_HTTPS') == '1':
+if os.environ.get('VERCEL') == '1' or os.environ.get('TRUST_PROXY_HTTPS') == '1':
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO','https')
 AUTH_PASSWORD_VALIDATORS = [
  {'NAME':'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
